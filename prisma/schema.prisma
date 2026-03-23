@@ -1,13 +1,111 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
+}
+
+generator erd {
+  provider = "prisma-erd-generator"
+  output   = "../ERD.svg"
+  theme    = "neutral"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+enum Role {
+  BUYER
+  SELLER
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  SHIPPED
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
+  passwordHash String
+  firstName    String
+  lastName     String
+  avatarUrl    String?
+  role         Role      @default(BUYER)
+  balance      Float     @default(0.0)
+  createdAt    DateTime  @default(now())
+  
+  products     Product[]
+  orders       Order[]
+  reviews      Review[]
+}
+
+model Product {
+  id                 Int         @id @default(autoincrement())
+  title              String
+  description        String?
+  basePrice          Float
+  discountPercentage Int         @default(0)
+  stockQuantity      Int         @default(0)
+  tags               String[]
+  sellerId           Int
+  createdAt          DateTime    @default(now())
+
+  seller             User        @relation(fields: [sellerId], references: [id])
+  orderItems         OrderItem[]
+  reviews            Review[]
+}
+
+model Order {
+  id          Int         @id @default(autoincrement())
+  buyerId     Int
+  totalAmount Float
+  status      OrderStatus @default(PENDING)
+  createdAt   DateTime    @default(now())
+
+  buyer       User        @relation(fields: [buyerId], references: [id])
+  items       OrderItem[]
+  payment     Payment?
+}
+
+model OrderItem {
+  id        Int   @id @default(autoincrement())
+  orderId   Int
+  productId Int
+  quantity  Int
+  unitPrice Float
+
+  order     Order   @relation(fields: [orderId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+}
+
+model Payment {
+  id               Int           @id @default(autoincrement())
+  orderId          Int           @unique
+  amount           Float
+  commissionAmount Float
+  status           PaymentStatus @default(PENDING)
+  processedAt      DateTime?
+
+  order            Order         @relation(fields: [orderId], references: [id])
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  authorId  Int
+  rating    Int
+  comment   String
+  createdAt DateTime @default(now())
+
+  product   Product  @relation(fields: [productId], references: [id])
+  author    User     @relation(fields: [authorId], references: [id])
 }
