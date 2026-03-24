@@ -7,6 +7,7 @@ import { ProductsModule } from './modules/products/products.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
+import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { ReviewsModule } from './modules/reviews/reviews.module';
       isGlobal: true,
       expandVariables: true,
     }),
+    AuthModule,
     UsersModule,
     ProductsModule,
     OrdersModule,
