@@ -1,8 +1,10 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, ParseIntPipe, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @ApiTags('users')
 @Controller('users')
@@ -16,6 +18,17 @@ export class UsersController {
   @ApiResponse({ status: HttpStatus.BAD_REQUEST })
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get current user profile' })
+  @ApiResponse({ status: HttpStatus.OK })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED })
+  getProfile(@CurrentUser() user: any) {
+    return this.usersService.findOne(user.id);
   }
 
   @Get()
@@ -35,6 +48,8 @@ export class UsersController {
     return this.usersService.findOne(id);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
   @Patch(':id')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Update user by id' })
@@ -44,6 +59,8 @@ export class UsersController {
     return this.usersService.update(id, updateUserDto);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete user by id' })
