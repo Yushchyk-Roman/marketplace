@@ -1,1 +1,9 @@
-export class CreatePaymentDto {}
+import { ApiProperty } from '@nestjs/swagger';
+import { IsInt, Min } from 'class-validator';
+
+export class CreatePaymentDto {
+  @ApiProperty({ example: 1 })
+  @IsInt()
+  @Min(1)
+  orderId: number;
+}
