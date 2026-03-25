@@ -1,8 +1,13 @@
-import { Controller, Post, UseInterceptors, UploadedFile, UseGuards, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator } from '@nestjs/common';
+import { Controller, Post, UseInterceptors, UploadedFile, UseGuards, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator, Body, ParseEnumPipe } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiConsumes, ApiBody, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { FilesService } from './files.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+
+export enum FileFolder {
+  USERS = 'users',
+  PRODUCTS = 'products',
+}
 
 @ApiTags('files')
 @ApiBearerAuth()
@@ -12,7 +17,7 @@ export class FilesController {
   constructor(private readonly filesService: FilesService) {}
 
   @Post('upload')
-  @ApiOperation({ summary: 'Upload an image to S3' })
+  @ApiOperation({ summary: 'Upload an image to Cloudinary' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -21,6 +26,11 @@ export class FilesController {
         file: {
           type: 'string',
           format: 'binary',
+        },
+        folder: {
+          type: 'string',
+          enum: Object.values(FileFolder),
+          default: FileFolder.PRODUCTS,
         },
       },
     },
@@ -36,7 +46,8 @@ export class FilesController {
       }),
     )
     file: Express.Multer.File,
+    @Body('folder', new ParseEnumPipe(FileFolder)) folder: FileFolder,
   ) {
-    return this.filesService.uploadFile(file);
+    return this.filesService.uploadFile(file, folder);
   }
 }

@@ -12,10 +12,10 @@ export class FilesService {
     });
   }
 
-  async uploadFile(file: Express.Multer.File): Promise<{ url: string }> {
+  async uploadFile(file: Express.Multer.File, folder: string): Promise<{ url: string }> {
     return new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
-        { folder: 'marketplace' },
+        { folder: `marketplace/${folder}` },
         (error, result) => {
           if (error || !result) {
             return reject(new InternalServerErrorException('Error uploading to Cloudinary'));
