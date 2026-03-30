@@ -18,6 +18,7 @@ enum OrderStatus {
   SHIPPED
   COMPLETED
   CANCELLED
+  RETURNED
 }
 
 enum PaymentStatus {
