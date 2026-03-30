@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
+import { OrderStatus } from '@prisma/client';
 
 @Injectable()
 export class OrdersService {
@@ -91,4 +92,51 @@ export class OrdersService {
       data: { status: updateOrderDto.status },
     });
   }
+ async returnOrder(id: number, userId: number) {
+  const order = await this.prisma.order.findUnique({
+    where: { id },
+    include: { items: { include: { product: true } } },
+  });
+
+  if (!order) {
+    throw new NotFoundException();
+  }
+
+  if (order.buyerId !== userId) {
+    throw new ForbiddenException();
+  }
+
+  const allowedStatuses: OrderStatus[] = [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.COMPLETED];
+  
+  if (!allowedStatuses.includes(order.status)) {
+    throw new BadRequestException();
+  }
+
+  return this.prisma.$transaction(async (prisma) => {
+    for (const item of order.items) {
+      await prisma.product.update({
+        where: { id: item.productId },
+        data: { stockQuantity: { increment: item.quantity } },
+      });
+
+      const commissionRate = 0.05;
+      const sellerShare = item.unitPrice * item.quantity * (1 - commissionRate);
+
+      await prisma.user.update({
+        where: { id: item.product.sellerId },
+        data: { balance: { decrement: parseFloat(sellerShare.toFixed(2)) } },
+      });
+    }
+
+    await prisma.user.update({
+      where: { id: order.buyerId },
+      data: { balance: { increment: order.totalAmount } },
+    });
+
+    return prisma.order.update({
+      where: { id },
+      data: { status: OrderStatus.RETURNED },
+    });
+  });
+}
 }
