@@ -24,13 +24,13 @@ export class PaymentsService {
         order.buyerId !== buyerId ||
         order.status !== OrderStatus.PENDING
       ) {
-        throw new BadRequestException();
+        throw new BadRequestException("Invalid order");
       }
 
       const buyer = await prisma.user.findUnique({ where: { id: buyerId } });
 
       if (!buyer || buyer.balance < order.totalAmount) {
-        throw new BadRequestException();
+        throw new BadRequestException("Insufficient funds");
       }
 
       await prisma.user.update({
