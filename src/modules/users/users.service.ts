@@ -3,6 +3,7 @@ import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService } from '../../prisma/prisma.service';
+import { Role } from '@prisma/client';
 
 @Injectable()
 export class UsersService {
@@ -66,5 +67,35 @@ export class UsersService {
     return this.prisma.user.delete({
       where: { id },
     });
+  }
+
+  async getSellerRating(sellerId: number) {
+    const seller = await this.prisma.user.findUnique({
+      where: { id: sellerId },
+    });
+
+    if (!seller || seller.role !== Role.SELLER) {
+      throw new NotFoundException();
+    }
+
+    const result = await this.prisma.review.aggregate({
+      where: {
+        product: {
+          sellerId: sellerId,
+        },
+      },
+      _avg: {
+        rating: true,
+      },
+      _count: {
+        rating: true,
+      },
+    });
+
+    return {
+      sellerId,
+      averageRating: parseFloat((result._avg.rating || 0).toFixed(2)),
+      totalReviews: result._count.rating,
+    };
   }
 }
