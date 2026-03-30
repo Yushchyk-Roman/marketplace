@@ -1,5 +1,22 @@
-import { Controller, Get, Post, Body, Patch, Param, ParseIntPipe, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  ParseIntPipe,
+  UseGuards,
+  HttpCode,
+  Request,
+  HttpStatus,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -46,7 +63,21 @@ export class OrdersController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Update order status' })
   @ApiResponse({ status: HttpStatus.OK })
-  updateStatus(@Param('id', ParseIntPipe) id: number, @Body() updateOrderDto: UpdateOrderDto) {
+  updateStatus(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateOrderDto: UpdateOrderDto,
+  ) {
     return this.ordersService.updateStatus(id, updateOrderDto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/return')
+  async returnOrder(@Param('id', ParseIntPipe) id: number, @Request() req) {
+    return this.ordersService.returnOrder(id, req.user.id);
+  }
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/cancel')
+  async cancelOrder(@Param('id', ParseIntPipe) id: number, @Request() req) {
+    return this.ordersService.cancelOrder(id, req.user.id);
   }
 }

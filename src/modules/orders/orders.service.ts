@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
@@ -11,7 +16,11 @@ export class OrdersService {
   async create(buyerId: number, createOrderDto: CreateOrderDto) {
     return this.prisma.$transaction(async (prisma) => {
       let totalAmount = 0;
-      const orderItemsData: { productId: number; quantity: number; unitPrice: number }[] = [];
+      const orderItemsData: {
+        productId: number;
+        quantity: number;
+        unitPrice: number;
+      }[] = [];
 
       for (const item of createOrderDto.items) {
         const product = await prisma.product.findUnique({
@@ -26,7 +35,8 @@ export class OrdersService {
           throw new BadRequestException();
         }
 
-        const unitPrice = product.basePrice * (1 - product.discountPercentage / 100);
+        const unitPrice =
+          product.basePrice * (1 - product.discountPercentage / 100);
         totalAmount += unitPrice * item.quantity;
 
         orderItemsData.push({
@@ -92,51 +102,90 @@ export class OrdersService {
       data: { status: updateOrderDto.status },
     });
   }
- async returnOrder(id: number, userId: number) {
-  const order = await this.prisma.order.findUnique({
-    where: { id },
-    include: { items: { include: { product: true } } },
-  });
+  async returnOrder(id: number, userId: number) {
+    const order = await this.prisma.order.findUnique({
+      where: { id },
+      include: { items: { include: { product: true } } },
+    });
 
-  if (!order) {
-    throw new NotFoundException();
-  }
-
-  if (order.buyerId !== userId) {
-    throw new ForbiddenException();
-  }
-
-  const allowedStatuses: OrderStatus[] = [OrderStatus.PAID, OrderStatus.SHIPPED, OrderStatus.COMPLETED];
-  
-  if (!allowedStatuses.includes(order.status)) {
-    throw new BadRequestException();
-  }
-
-  return this.prisma.$transaction(async (prisma) => {
-    for (const item of order.items) {
-      await prisma.product.update({
-        where: { id: item.productId },
-        data: { stockQuantity: { increment: item.quantity } },
-      });
-
-      const commissionRate = 0.05;
-      const sellerShare = item.unitPrice * item.quantity * (1 - commissionRate);
-
-      await prisma.user.update({
-        where: { id: item.product.sellerId },
-        data: { balance: { decrement: parseFloat(sellerShare.toFixed(2)) } },
-      });
+    if (!order) {
+      throw new NotFoundException('Order not found');
     }
 
-    await prisma.user.update({
-      where: { id: order.buyerId },
-      data: { balance: { increment: order.totalAmount } },
+    if (order.buyerId !== userId) {
+      throw new ForbiddenException('You can only return your own orders');
+    }
+
+    const allowedStatuses: OrderStatus[] = [
+      OrderStatus.PAID,
+      OrderStatus.SHIPPED,
+      OrderStatus.COMPLETED,
+    ];
+
+    if (!allowedStatuses.includes(order.status)) {
+      throw new BadRequestException(
+        'Order cannot be returned in its current status',
+      );
+    }
+
+    return this.prisma.$transaction(async (prisma) => {
+      for (const item of order.items) {
+        await prisma.product.update({
+          where: { id: item.productId },
+          data: { stockQuantity: { increment: item.quantity } },
+        });
+
+        const commissionRate = 0.05;
+        const sellerShare =
+          item.unitPrice * item.quantity * (1 - commissionRate);
+
+        await prisma.user.update({
+          where: { id: item.product.sellerId },
+          data: { balance: { decrement: parseFloat(sellerShare.toFixed(2)) } },
+        });
+      }
+
+      await prisma.user.update({
+        where: { id: order.buyerId },
+        data: { balance: { increment: order.totalAmount } },
+      });
+
+      return prisma.order.update({
+        where: { id },
+        data: { status: OrderStatus.RETURNED },
+      });
+    });
+  }
+  async cancelOrder(id: number, userId: number) {
+    const order = await this.prisma.order.findUnique({
+      where: { id },
+      include: { items: true },
     });
 
-    return prisma.order.update({
-      where: { id },
-      data: { status: OrderStatus.RETURNED },
+    if (!order) {
+      throw new NotFoundException();
+    }
+
+    if (order.buyerId !== userId) {
+      throw new ForbiddenException();
+    }
+
+    if (order.status !== OrderStatus.PENDING) {
+      throw new BadRequestException();
+    }
+
+    return this.prisma.$transaction(async (prisma) => {
+      for (const item of order.items) {
+        await prisma.product.update({
+          where: { id: item.productId },
+          data: { stockQuantity: { increment: item.quantity } },
+        });
+      }
+
+      return prisma.order.update({
+        where: { id },
+        data: { status: OrderStatus.CANCELLED },
+      });
     });
-  });
-}
+  }
 }
