@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { OrderStatus, PaymentStatus } from '@prisma/client';
@@ -11,32 +16,52 @@ export class PaymentsService {
     return this.prisma.$transaction(async (prisma) => {
       const order = await prisma.order.findUnique({
         where: { id: createPaymentDto.orderId },
+        include: { items: { include: { product: true } } },
       });
 
-      if (!order) {
-        throw new NotFoundException();
-      }
-
-      if (order.buyerId !== buyerId) {
-        throw new ForbiddenException();
-      }
-
-      if (order.status !== OrderStatus.PENDING) {
+      if (
+        !order ||
+        order.buyerId !== buyerId ||
+        order.status !== OrderStatus.PENDING
+      ) {
         throw new BadRequestException();
       }
 
-      const commissionRate = 0.05;
-      const commissionAmount = parseFloat((order.totalAmount * commissionRate).toFixed(2));
+      const buyer = await prisma.user.findUnique({ where: { id: buyerId } });
+
+      if (!buyer || buyer.balance < order.totalAmount) {
+        throw new BadRequestException();
+      }
+
+      await prisma.user.update({
+        where: { id: buyerId },
+        data: { balance: { decrement: order.totalAmount } },
+      });
+
+      const commissionRate = 0.01;
+      const totalCommission = parseFloat(
+        (order.totalAmount * commissionRate).toFixed(2),
+      );
 
       const payment = await prisma.payment.create({
         data: {
           orderId: order.id,
           amount: order.totalAmount,
-          commissionAmount,
+          commissionAmount: totalCommission,
           status: PaymentStatus.SUCCESS,
           processedAt: new Date(),
         },
       });
+
+      for (const item of order.items) {
+        const sellerShare =
+          item.unitPrice * item.quantity * (1 - commissionRate);
+
+        await prisma.user.update({
+          where: { id: item.product.sellerId },
+          data: { balance: { increment: parseFloat(sellerShare.toFixed(2)) } },
+        });
+      }
 
       await prisma.order.update({
         where: { id: order.id },
