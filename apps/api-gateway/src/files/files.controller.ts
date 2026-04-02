@@ -2,7 +2,7 @@ import { Controller, Post, UseInterceptors, UploadedFile, UseGuards, ParseFilePi
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiConsumes, ApiBody, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { FilesService } from './files.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '@app/shared';
 
 export enum FileFolder {
   USERS = 'users',
