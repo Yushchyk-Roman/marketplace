@@ -1,8 +1,86 @@
 {
   "$schema": "https://json.schemastore.org/nest-cli",
   "collection": "@nestjs/schematics",
-  "sourceRoot": "src",
+  "sourceRoot": "apps/marketplace-api/src",
   "compilerOptions": {
-    "deleteOutDir": true
+    "deleteOutDir": true,
+    "webpack": true,
+    "tsConfigPath": "apps/marketplace-api/tsconfig.app.json"
+  },
+  "monorepo": true,
+  "root": "apps/marketplace-api",
+  "projects": {
+    "api-gateway": {
+      "type": "application",
+      "root": "apps/api-gateway",
+      "entryFile": "main",
+      "sourceRoot": "apps/api-gateway/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/api-gateway/tsconfig.app.json"
+      }
+    },
+    "catalog-service": {
+      "type": "application",
+      "root": "apps/catalog-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/catalog-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/catalog-service/tsconfig.app.json"
+      }
+    },
+    "marketplace-api": {
+      "type": "application",
+      "root": "apps/marketplace-api",
+      "entryFile": "main",
+      "sourceRoot": "apps/marketplace-api/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/marketplace-api/tsconfig.app.json"
+      }
+    },
+    "order-service": {
+      "type": "application",
+      "root": "apps/order-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/order-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/order-service/tsconfig.app.json"
+      }
+    },
+    "payment-service": {
+      "type": "application",
+      "root": "apps/payment-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/payment-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/payment-service/tsconfig.app.json"
+      }
+    },
+    "review-service": {
+      "type": "application",
+      "root": "apps/review-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/review-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/review-service/tsconfig.app.json"
+      }
+    },
+    "seller-service": {
+      "type": "application",
+      "root": "apps/seller-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/seller-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/seller-service/tsconfig.app.json"
+      }
+    },
+    "shared": {
+      "type": "library",
+      "root": "libs/shared",
+      "entryFile": "index",
+      "sourceRoot": "libs/shared/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/shared/tsconfig.lib.json"
+      }
+    }
   }
 }
