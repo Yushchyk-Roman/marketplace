@@ -98,4 +98,21 @@ export class UsersService {
       totalReviews: result._count.rating,
     };
   }
+
+  async updateBalance(id: number, amount: number) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+
+    if (!user) {
+      throw new NotFoundException('Користувача не знайдено');
+    }
+
+    return this.prisma.user.update({
+      where: { id },
+      data: {
+        balance: {
+          increment: amount,
+        },
+      },
+    });
+  }
 }
