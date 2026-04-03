@@ -82,4 +82,12 @@ export class ProductsController {
   remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: any) {
     return this.productsService.remove(id, user.id);
   }
+  
+  @Patch(':id/stock')
+  async updateStock(
+    @Param('id') id: string,
+    @Body('stockQuantity') stockQuantity: number,
+  ) {
+    return this.productsService.updateStock(+id, stockQuantity);
+  }
 }

@@ -119,4 +119,11 @@ export class ProductsService {
       where: { id },
     });
   }
+
+  async updateStock(id: number, stockQuantity: number) {
+    return this.prisma.product.update({
+      where: { id },
+      data: { stockQuantity },
+    });
+  }
 }
