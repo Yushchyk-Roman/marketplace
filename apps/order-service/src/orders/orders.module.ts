@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { OrdersController } from './orders.controller';
-import { PrismaModule } from '@app/shared';
+import { PrismaModule } from '../prisma.module';
 import { PassportModule } from '@nestjs/passport';
 import { JwtStrategy } from '@app/shared';
 
