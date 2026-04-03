@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { PrismaService } from '@app/shared/prisma/prisma.service';
+import { PrismaService } from '../prisma.service';
 import { Role } from '@prisma/client';
 
 @Injectable()
@@ -75,30 +75,41 @@ export class UsersService {
     });
 
     if (!seller || seller.role !== Role.SELLER) {
-      throw new NotFoundException();
+      throw new NotFoundException('Продавця не знайдено');
     }
 
-    const result = await this.prisma.review.aggregate({
-      where: {
-        product: {
-          sellerId: sellerId,
-        },
-      },
-      _avg: {
-        rating: true,
-      },
-      _count: {
-        rating: true,
-      },
-    });
+    try {
+      const productsRes = await fetch('http://localhost:3002/products?limit=1000');
+      const productsData = await productsRes.json();
+      
+      const products = productsData.data || [];
+      
+      const sellerProductIds = products
+        .filter((p: any) => p.sellerId === sellerId)
+        .map((p: any) => p.id);
 
-    return {
-      sellerId,
-      averageRating: parseFloat((result._avg.rating || 0).toFixed(2)),
-      totalReviews: result._count.rating,
-    };
+      const reviewsRes = await fetch('http://localhost:3005/reviews');
+      const reviews = reviewsRes.ok ? await reviewsRes.json() : [];
+
+      const sellerReviews = reviews.filter((r: any) => 
+        sellerProductIds.includes(r.productId)
+      );
+
+      const totalReviews = sellerReviews.length;
+      const averageRating = totalReviews > 0 
+        ? sellerReviews.reduce((sum: number, r: any) => sum + r.rating, 0) / totalReviews 
+        : 0;
+
+      return {
+        sellerId,
+        averageRating: parseFloat(averageRating.toFixed(2)),
+        totalReviews,
+      };
+    } catch (error) {
+      console.error('Помилка агрегації рейтингу:', error);
+      return { sellerId, averageRating: 0, totalReviews: 0 };
+    }
   }
-
   async updateBalance(id: number, amount: number) {
     const user = await this.prisma.user.findUnique({ where: { id } });
 
