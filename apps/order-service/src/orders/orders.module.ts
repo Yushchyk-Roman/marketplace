@@ -2,10 +2,12 @@ import { Module } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 import { OrdersController } from './orders.controller';
 import { PrismaModule } from '@app/shared';
+import { PassportModule } from '@nestjs/passport';
+import { JwtStrategy } from '@app/shared';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, PassportModule],
   controllers: [OrdersController],
-  providers: [OrdersService],
+  providers: [OrdersService, JwtStrategy],
 })
 export class OrdersModule {}
