@@ -9,7 +9,7 @@ import { ApiGatewayService } from './api-gateway.service';
 import { FilesModule } from './files/files.module';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { createProxyMiddleware } from 'http-proxy-middleware';
+import { createProxyMiddleware, fixRequestBody } from 'http-proxy-middleware';
 
 // @Module({
 //   imports: [
@@ -60,6 +60,9 @@ export class ApiGatewayModule {
         createProxyMiddleware({
           target: 'http://localhost:3001',
           changeOrigin: true,
+          on: {
+            proxyReq: fixRequestBody,
+          }
         }),
       )
       .forRoutes(
@@ -76,6 +79,9 @@ export class ApiGatewayModule {
         createProxyMiddleware({
           target: 'http://localhost:3002',
           changeOrigin: true,
+          on: {
+            proxyReq: fixRequestBody,
+          },
         }),
       )
       .forRoutes(
@@ -90,6 +96,9 @@ export class ApiGatewayModule {
         createProxyMiddleware({
           target: 'http://localhost:3003',
           changeOrigin: true,
+          on: {
+            proxyReq: fixRequestBody,
+          }
         }),
       )
       .forRoutes(
@@ -104,6 +113,9 @@ export class ApiGatewayModule {
         createProxyMiddleware({
           target: 'http://localhost:3004',
           changeOrigin: true,
+          on: {
+            proxyReq: fixRequestBody,
+          }
         }),
       )
       .forRoutes(
@@ -118,6 +130,9 @@ export class ApiGatewayModule {
         createProxyMiddleware({
           target: 'http://localhost:3005',
           changeOrigin: true,
+          on: {
+            proxyReq: fixRequestBody,
+          }
         }),
       )
       .forRoutes(
