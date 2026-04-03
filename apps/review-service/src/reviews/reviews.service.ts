@@ -8,11 +8,9 @@ export class ReviewsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(authorId: number, createReviewDto: CreateReviewDto) {
-    const product = await this.prisma.product.findUnique({
-      where: { id: createReviewDto.productId },
-    });
-
-    if (!product) {
+    const productRes = await fetch(`http://localhost:3002/products/${createReviewDto.productId}`);
+    
+    if (!productRes.ok) {
       throw new NotFoundException();
     }
 
@@ -25,26 +23,46 @@ export class ReviewsService {
   }
 
   async findAll() {
-    return this.prisma.review.findMany({
-      include: {
-        author: { select: { id: true, firstName: true } },
-      },
-    });
+    const reviews = await this.prisma.review.findMany();
+
+    const reviewsWithAuthors = await Promise.all(
+      reviews.map(async (review) => {
+        try {
+          const authorRes = await fetch(`http://localhost:3001/users/${review.authorId}`);
+          const author = authorRes.ok ? await authorRes.json() : null;
+          return {
+            ...review,
+            author: author ? { id: author.id, firstName: author.firstName } : null,
+          };
+        } catch {
+          return { ...review, author: null };
+        }
+      }),
+    );
+
+    return reviewsWithAuthors;
   }
 
   async findOne(id: number) {
     const review = await this.prisma.review.findUnique({
       where: { id },
-      include: {
-        author: { select: { id: true, firstName: true } },
-      },
     });
 
     if (!review) {
       throw new NotFoundException();
     }
 
-    return review;
+    try {
+      const authorRes = await fetch(`http://localhost:3001/users/${review.authorId}`);
+      const author = authorRes.ok ? await authorRes.json() : null;
+
+      return {
+        ...review,
+        author: author ? { id: author.id, firstName: author.firstName } : null,
+      };
+    } catch {
+      return { ...review, author: null };
+    }
   }
 
   async update(id: number, authorId: number, updateReviewDto: UpdateReviewDto) {
