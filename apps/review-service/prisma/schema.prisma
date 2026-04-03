@@ -1,0 +1,17 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../node_modules/.prisma/client/review"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Review {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  authorId  Int
+  rating    Int
+  comment   String
+  createdAt DateTime @default(now())
+}
