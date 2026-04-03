@@ -24,19 +24,22 @@ export class OrdersService {
     const productsToUpdate: { id: number; newQuantity: number }[] = [];
 
     for (const item of createOrderDto.items) {
-      const response = await fetch(`http://localhost:3002/products/${item.productId}`);
-      
+      const response = await fetch(
+        `http://localhost:3002/products/${item.productId}`,
+      );
+
       if (!response.ok) {
         throw new NotFoundException();
       }
-      
+
       const product = await response.json();
 
       if (product.stockQuantity < item.quantity) {
         throw new BadRequestException();
       }
 
-      const unitPrice = product.basePrice * (1 - product.discountPercentage / 100);
+      const unitPrice =
+        product.basePrice * (1 - product.discountPercentage / 100);
       totalAmount += unitPrice * item.quantity;
 
       orderItemsData.push({
@@ -52,13 +55,24 @@ export class OrdersService {
     }
 
     for (const update of productsToUpdate) {
-      const updateRes = await fetch(`http://localhost:3002/products/${update.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ stockQuantity: update.newQuantity }),
-      });
+      const updateRes = await fetch(
+        `http://localhost:3002/products/${update.id}/stock`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ stockQuantity: update.newQuantity }),
+        },
+      );
+
       if (!updateRes.ok) {
-        throw new InternalServerErrorException();
+        const errText = await updateRes.text();
+        console.error(
+          `Помилка оновлення складу для товару ${update.id}:`,
+          errText,
+        );
+        throw new InternalServerErrorException(
+          'Не вдалося оновити залишки на складі',
+        );
       }
     }
 
@@ -96,12 +110,16 @@ export class OrdersService {
       throw new NotFoundException();
     }
 
-    const buyerRes = await fetch(`http://localhost:3001/users/${order.buyerId}`);
+    const buyerRes = await fetch(
+      `http://localhost:3001/users/${order.buyerId}`,
+    );
     const buyer = buyerRes.ok ? await buyerRes.json() : null;
 
     const itemsWithProducts = await Promise.all(
       order.items.map(async (item) => {
-        const prodRes = await fetch(`http://localhost:3002/products/${item.productId}`);
+        const prodRes = await fetch(
+          `http://localhost:3002/products/${item.productId}`,
+        );
         const product = prodRes.ok ? await prodRes.json() : null;
         return { ...item, product };
       }),
@@ -109,7 +127,9 @@ export class OrdersService {
 
     return {
       ...order,
-      buyer: buyer ? { id: buyer.id, firstName: buyer.firstName, email: buyer.email } : null,
+      buyer: buyer
+        ? { id: buyer.id, firstName: buyer.firstName, email: buyer.email }
+        : null,
       items: itemsWithProducts,
     };
   }
@@ -145,17 +165,25 @@ export class OrdersService {
         await fetch(`http://localhost:3002/products/${item.productId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ stockQuantity: item.product.stockQuantity + item.quantity }),
+          body: JSON.stringify({
+            stockQuantity: item.product.stockQuantity + item.quantity,
+          }),
         });
 
         const commissionRate = 0.05;
-        const sellerShare = item.unitPrice * item.quantity * (1 - commissionRate);
+        const sellerShare =
+          item.unitPrice * item.quantity * (1 - commissionRate);
 
-        await fetch(`http://localhost:3001/users/${item.product.sellerId}/balance`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ amount: -parseFloat(sellerShare.toFixed(2)) }),
-        });
+        await fetch(
+          `http://localhost:3001/users/${item.product.sellerId}/balance`,
+          {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              amount: -parseFloat(sellerShare.toFixed(2)),
+            }),
+          },
+        );
       }
     }
 
@@ -187,7 +215,9 @@ export class OrdersService {
         await fetch(`http://localhost:3002/products/${item.productId}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ stockQuantity: item.product.stockQuantity + item.quantity }),
+          body: JSON.stringify({
+            stockQuantity: item.product.stockQuantity + item.quantity,
+          }),
         });
       }
     }
@@ -195,6 +225,13 @@ export class OrdersService {
     return this.prisma.order.update({
       where: { id },
       data: { status: OrderStatus.CANCELLED },
+    });
+  }
+  
+  async updateInternalStatus(id: number, status: OrderStatus) {
+    return this.prisma.order.update({
+      where: { id },
+      data: { status },
     });
   }
 }
