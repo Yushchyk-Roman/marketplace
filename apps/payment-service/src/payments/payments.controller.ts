@@ -1,5 +1,21 @@
-import { Controller, Get, Post, Body, Param, ParseIntPipe, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  ParseIntPipe,
+  Headers,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { PaymentsService } from './payments.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { CurrentUser, JwtAuthGuard } from '@app/shared';
@@ -15,8 +31,16 @@ export class PaymentsController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Process payment for an order' })
   @ApiResponse({ status: HttpStatus.CREATED })
-  create(@CurrentUser() user: any, @Body() createPaymentDto: CreatePaymentDto) {
-    return this.paymentsService.processPayment(user.id, createPaymentDto);
+  create(
+    @CurrentUser() user: any,
+    @Body() createPaymentDto: CreatePaymentDto,
+    @Headers('authorization') authHeader: string,
+  ) {
+    return this.paymentsService.processPayment(
+      user.id,
+      createPaymentDto,
+      authHeader,
+    );
   }
 
   @Get()
