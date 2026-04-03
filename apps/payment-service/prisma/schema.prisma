@@ -1,0 +1,23 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../node_modules/.prisma/client/payment"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+model Payment {
+  id               Int           @id @default(autoincrement())
+  orderId          Int           @unique
+  amount           Float
+  commissionAmount Float
+  status           PaymentStatus @default(PENDING)
+  processedAt      DateTime?
+}
