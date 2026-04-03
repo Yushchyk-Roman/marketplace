@@ -43,17 +43,27 @@ export class ProductsService {
         skip,
         take: limit,
         orderBy: { [sortBy]: sortOrder },
-        include: {
-          seller: {
-            select: { id: true, firstName: true, lastName: true },
-          },
-        },
       }),
       this.prisma.product.count({ where }),
     ]);
 
+    const dataWithSellers = await Promise.all(
+      data.map(async (product) => {
+        try {
+          const sellerRes = await fetch(`http://localhost:3001/users/${product.sellerId}`);
+          const seller = sellerRes.ok ? await sellerRes.json() : null;
+          return {
+            ...product,
+            seller: seller ? { id: seller.id, firstName: seller.firstName, lastName: seller.lastName } : null,
+          };
+        } catch {
+          return { ...product, seller: null };
+        }
+      }),
+    );
+
     return {
-      data,
+      data: dataWithSellers,
       meta: {
         total,
         page,
@@ -66,18 +76,23 @@ export class ProductsService {
   async findOne(id: number) {
     const product = await this.prisma.product.findUnique({
       where: { id },
-      include: {
-        seller: {
-          select: { id: true, firstName: true, lastName: true },
-        },
-      },
     });
 
     if (!product) {
       throw new NotFoundException();
     }
 
-    return product;
+    try {
+      const sellerRes = await fetch(`http://localhost:3001/users/${product.sellerId}`);
+      const seller = sellerRes.ok ? await sellerRes.json() : null;
+      
+      return {
+        ...product,
+        seller: seller ? { id: seller.id, firstName: seller.firstName, lastName: seller.lastName } : null,
+      };
+    } catch {
+      return { ...product, seller: null };
+    }
   }
 
   async update(id: number, sellerId: number, updateProductDto: UpdateProductDto) {
