@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { ProductsController } from './products.controller';
-import { PrismaModule } from '@app/shared';
+import { PrismaModule } from '../prisma.module';
 import { JwtStrategy } from '@app/shared';
 import { PassportModule } from '@nestjs/passport';
 

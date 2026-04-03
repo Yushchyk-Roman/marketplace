@@ -1,0 +1,20 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../node_modules/.prisma/client/catalog"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Product {
+  id                 Int      @id @default(autoincrement())
+  title              String
+  description        String?
+  basePrice          Float
+  discountPercentage Int      @default(0)
+  stockQuantity      Int      @default(0)
+  tags               String[]
+  sellerId           Int      
+  createdAt          DateTime @default(now())
+}
