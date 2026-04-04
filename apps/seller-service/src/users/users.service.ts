@@ -79,7 +79,10 @@ export class UsersService {
     }
 
     try {
-      const productsRes = await fetch('http://localhost:3002/products?limit=1000');
+      const catalogUrl = process.env.CATALOG_SERVICE_URL || 'http://localhost:3002';
+      const reviewUrl = process.env.REVIEW_SERVICE_URL || 'http://localhost:3005';
+
+      const productsRes = await fetch(`${catalogUrl}/products?limit=1000`);
       const productsData = await productsRes.json();
       
       const products = productsData.data || [];
@@ -88,7 +91,7 @@ export class UsersService {
         .filter((p: any) => p.sellerId === sellerId)
         .map((p: any) => p.id);
 
-      const reviewsRes = await fetch('http://localhost:3005/reviews');
+      const reviewsRes = await fetch(`${reviewUrl}/reviews`);
       const reviews = reviewsRes.ok ? await reviewsRes.json() : [];
 
       const sellerReviews = reviews.filter((r: any) => 
