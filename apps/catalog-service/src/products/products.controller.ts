@@ -11,6 +11,7 @@ import {
   HttpCode,
   HttpStatus,
   Query,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -24,6 +25,7 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { GetProductsQueryDto } from './dto/get-products-query.dto';
 import { JwtAuthGuard, RolesGuard, Roles, CurrentUser } from '@app/shared';
+import { CacheInterceptor, CacheKey, CacheTTL } from '@nestjs/cache-manager';
 
 @ApiTags('products')
 @Controller('products')
@@ -42,7 +44,10 @@ export class ProductsController {
   }
 
   @Get()
+  @UseInterceptors(CacheInterceptor)
   @HttpCode(HttpStatus.OK)
+  @CacheKey('all_products')
+  @CacheTTL(60000)
   @ApiOperation({ summary: 'Get all products with pagination and filtering' })
   @ApiResponse({ status: HttpStatus.OK })
   findAll(@Query() query: GetProductsQueryDto) {
@@ -82,7 +87,7 @@ export class ProductsController {
   remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: any) {
     return this.productsService.remove(id, user.id);
   }
-  
+
   @Patch(':id/stock')
   async updateStock(
     @Param('id') id: string,
