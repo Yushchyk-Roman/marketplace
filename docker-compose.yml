@@ -6,28 +6,116 @@ services:
     container_name: marketplace-db
     restart: always
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password123}
+      POSTGRES_DB: ${POSTGRES_DB:-marketplace}
     ports:
-      - "${POSTGRES_PORT}:5432"
+      - "${POSTGRES_PORT:-5434}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
-  api:
-    build: .
-    container_name: marketplace-api
+  redis:
+    image: redis:alpine
+    container_name: marketplace-redis
     restart: always
     ports:
-      - "8080:3000"
+      - "6379:6379"
+
+  api-gateway:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: api-gateway
+    container_name: api-gateway
+    restart: always
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+      - redis
+
+  seller-service:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: seller-service
+    container_name: seller-service
+    restart: always
+    ports:
+      - "3001:3001"
+    env_file:
+      - .env
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
-      PORT: 3000
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_EXPIRATION: ${JWT_EXPIRATION}
-      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
-      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
-      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-password123}@postgres:5432/${POSTGRES_DB:-marketplace}?schema=seller
+    depends_on:
+      - postgres
+
+  catalog-service:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: catalog-service
+    container_name: catalog-service
+    restart: always
+    ports:
+      - "3002:3002"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-password123}@postgres:5432/${POSTGRES_DB:-marketplace}?schema=catalog
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      - postgres
+      - redis
+
+  order-service:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: order-service
+    container_name: order-service
+    restart: always
+    ports:
+      - "3003:3003"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-password123}@postgres:5432/${POSTGRES_DB:-marketplace}?schema=order
+    depends_on:
+      - postgres
+
+  payment-service:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: payment-service
+    container_name: payment-service
+    restart: always
+    ports:
+      - "3004:3004"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-password123}@postgres:5432/${POSTGRES_DB:-marketplace}?schema=payment
+    depends_on:
+      - postgres
+
+  review-service:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: review-service
+    container_name: review-service
+    restart: always
+    ports:
+      - "3005:3005"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-password123}@postgres:5432/${POSTGRES_DB:-marketplace}?schema=review
     depends_on:
       - postgres
 
