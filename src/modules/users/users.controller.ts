@@ -1,10 +1,28 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, ParseIntPipe, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  HttpCode,
+  HttpStatus,
+  ParseIntPipe,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
+import { UpdateBalanceDto } from './dto/update-balance.dto';
 
 @ApiTags('users')
 @Controller('users')
@@ -55,7 +73,10 @@ export class UsersController {
   @ApiOperation({ summary: 'Update user by id' })
   @ApiResponse({ status: HttpStatus.OK })
   @ApiResponse({ status: HttpStatus.NOT_FOUND })
-  update(@Param('id', ParseIntPipe) id: number, @Body() updateUserDto: UpdateUserDto) {
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
     return this.usersService.update(id, updateUserDto);
   }
 
@@ -68,5 +89,17 @@ export class UsersController {
   @ApiResponse({ status: HttpStatus.NOT_FOUND })
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.usersService.remove(id);
+  }
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/balance')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Update user balance (top up or deduct)' })
+  @ApiResponse({ status: HttpStatus.OK })
+  async updateBalance(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateBalanceDto: UpdateBalanceDto,
+  ) {
+    return this.usersService.updateBalance(id, updateBalanceDto.amount);
   }
 }

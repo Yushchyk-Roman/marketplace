@@ -5,23 +5,23 @@ import { Role } from '@prisma/client';
 export class CreateUserDto {
   @ApiProperty({ example: 'user@example.com' })
   @IsEmail()
-  email: string;
+  email!: string;
 
   @ApiProperty({ example: 'Password123!' })
   @IsString()
   @MinLength(8)
   @Matches(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/)
-  password: string;
+  password!: string;
 
   @ApiProperty({ example: 'John' })
   @IsString()
   @Length(2, 50)
-  firstName: string;
+  firstName!: string;
 
   @ApiProperty({ example: 'Doe' })
   @IsString()
   @Length(2, 50)
-  lastName: string;
+  lastName!: string;
 
   @ApiPropertyOptional({ example: 'https://example.com/avatar.jpg' })
   @IsOptional()
@@ -30,5 +30,5 @@ export class CreateUserDto {
 
   @ApiProperty({ enum: Role, example: Role.BUYER })
   @IsEnum(Role)
-  role: Role;
+  role!: Role;
 }

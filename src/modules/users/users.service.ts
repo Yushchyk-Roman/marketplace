@@ -98,4 +98,21 @@ export class UsersService {
       totalReviews: result._count.rating,
     };
   }
+  async updateBalance(id: number, amount: number) {
+    await this.findOne(id);
+
+    return this.prisma.user.update({
+      where: { id },
+      data: {
+        balance: {
+          increment: amount,
+        },
+      },
+      select: {
+        id: true,
+        email: true,
+        balance: true,
+      }
+    });
+  }
 }
