@@ -1,0 +1,161 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: marketplace-micro-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password123}
+      POSTGRES_DB: ${POSTGRES_DB:-marketplace}
+    ports:
+      - "${POSTGRES_PORT:-5434}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-marketplace}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  redis:
+    image: redis:alpine
+    container_name: marketplace-micro-redis
+    restart: always
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api-gateway:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: api-gateway
+    container_name: api-gateway
+    restart: always
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      SELLER_SERVICE_URL: http://seller-service:3001
+      CATALOG_SERVICE_URL: http://catalog-service:3002
+      ORDER_SERVICE_URL: http://order-service:3003
+      PAYMENT_SERVICE_URL: http://payment-service:3004
+      REVIEW_SERVICE_URL: http://review-service:3005
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  seller-service:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: seller-service
+    container_name: seller-service
+    restart: always
+    ports:
+      - "3001:3001"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-password123}@postgres:5432/${POSTGRES_DB:-marketplace}?schema=seller-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  catalog-service:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: catalog-service
+    container_name: catalog-service
+    restart: always
+    ports:
+      - "3002:3002"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-password123}@postgres:5432/${POSTGRES_DB:-marketplace}?schema=catalog-service
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      SELLER_SERVICE_URL: http://seller-service:3001
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  order-service:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: order-service
+    container_name: order-service
+    restart: always
+    ports:
+      - "3003:3003"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-password123}@postgres:5432/${POSTGRES_DB:-marketplace}?schema=order-service
+      CATALOG_SERVICE_URL: http://catalog-service:3002
+      SELLER_SERVICE_URL: http://seller-service:3001
+    depends_on:
+      postgres:
+        condition: service_healthy
+      catalog-service:
+        condition: service_started
+      seller-service:
+        condition: service_started
+
+  payment-service:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: payment-service
+    container_name: payment-service
+    restart: always
+    ports:
+      - "3004:3004"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-password123}@postgres:5432/${POSTGRES_DB:-marketplace}?schema=payment-service
+      ORDER_SERVICE_URL: http://order-service:3003
+      SELLER_SERVICE_URL: http://seller-service:3001
+    depends_on:
+      postgres:
+        condition: service_healthy
+      order-service:
+        condition: service_started
+
+  review-service:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: review-service
+    container_name: review-service
+    restart: always
+    ports:
+      - "3005:3005"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-password123}@postgres:5432/${POSTGRES_DB:-marketplace}?schema=review-service
+      CATALOG_SERVICE_URL: http://catalog-service:3002
+      SELLER_SERVICE_URL: http://seller-service:3001
+    depends_on:
+      postgres:
+        condition: service_healthy
+      catalog-service:
+        condition: service_started
+
+volumes:
+  postgres-data:

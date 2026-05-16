@@ -1,0 +1,36 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../node_modules/.prisma/client/order" 
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  SHIPPED
+  COMPLETED
+  CANCELLED
+  RETURNED
+}
+
+model Order {
+  id          Int         @id @default(autoincrement())
+  buyerId     Int         
+  totalAmount Float
+  status      OrderStatus @default(PENDING)
+  createdAt   DateTime    @default(now())
+  items       OrderItem[]
+}
+
+model OrderItem {
+  id        Int   @id @default(autoincrement())
+  orderId   Int
+  productId Int   
+  quantity  Int
+  unitPrice Float
+  order     Order @relation(fields: [orderId], references: [id])
+}
