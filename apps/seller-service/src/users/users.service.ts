@@ -109,7 +109,6 @@ export class UsersService {
       return { sellerId, averageRating: 0, totalReviews: 0 };
     }
   }
-
   async updateBalance(id: number, amount: number) {
     const user = await this.prisma.user.findUnique({ where: { id } });
 
