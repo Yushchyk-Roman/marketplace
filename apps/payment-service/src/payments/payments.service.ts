@@ -23,11 +23,7 @@ export class PaymentsService {
     authHeader: string,
   ) {
     const orderRes = await fetch(
-<<<<<<< HEAD
       `${this.ORDER_URL}/orders/${createPaymentDto.orderId}`,
-=======
-      `http://localhost:3003/orders/${createPaymentDto.orderId}`,
->>>>>>> origin/microservices
       {
         headers: { Authorization: authHeader },
       },
@@ -46,11 +42,7 @@ export class PaymentsService {
       throw new ForbiddenException('Invalid order status or buyer mismatch');
     }
 
-<<<<<<< HEAD
     const buyerRes = await fetch(`${this.SELLER_URL}/users/${buyerId}`, {
-=======
-    const buyerRes = await fetch(`http://localhost:3001/users/${buyerId}`, {
->>>>>>> origin/microservices
       headers: { Authorization: authHeader },
     });
 
@@ -68,11 +60,7 @@ export class PaymentsService {
     }
 
     const buyerUpdateRes = await fetch(
-<<<<<<< HEAD
       `${this.SELLER_URL}/users/${buyerId}/balance`,
-=======
-      `http://localhost:3001/users/${buyerId}/balance`,
->>>>>>> origin/microservices
       {
         method: 'PATCH',
         headers: {
@@ -99,11 +87,7 @@ export class PaymentsService {
           item.unitPrice * item.quantity * (1 - commissionRate);
 
         const sellerUpdateRes = await fetch(
-<<<<<<< HEAD
           `${this.SELLER_URL}/users/${item.product.sellerId}/balance`,
-=======
-          `http://localhost:3001/users/${item.product.sellerId}/balance`,
->>>>>>> origin/microservices
           {
             method: 'PATCH',
             headers: {
@@ -133,11 +117,7 @@ export class PaymentsService {
       },
     });
 
-<<<<<<< HEAD
     const orderUpdateRes = await fetch(`${this.ORDER_URL}/orders/${order.id}/internal-status`, {
-=======
-    const orderUpdateRes = await fetch(`http://localhost:3003/orders/${order.id}/internal-status`, {
->>>>>>> origin/microservices
       method: 'PATCH',
       headers: { 
         'Content-Type': 'application/json',
@@ -161,11 +141,7 @@ export class PaymentsService {
       payments.map(async (payment) => {
         try {
           const orderRes = await fetch(
-<<<<<<< HEAD
             `${this.ORDER_URL}/orders/${payment.orderId}`,
-=======
-            `http://localhost:3003/orders/${payment.orderId}`,
->>>>>>> origin/microservices
           );
           const order = orderRes.ok ? await orderRes.json() : null;
           return { ...payment, order };
@@ -189,11 +165,7 @@ export class PaymentsService {
 
     try {
       const orderRes = await fetch(
-<<<<<<< HEAD
         `${this.ORDER_URL}/orders/${payment.orderId}`,
-=======
-        `http://localhost:3003/orders/${payment.orderId}`,
->>>>>>> origin/microservices
       );
       const order = orderRes.ok ? await orderRes.json() : null;
       return { ...payment, order };
@@ -201,8 +173,4 @@ export class PaymentsService {
       return { ...payment, order: null };
     }
   }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> origin/microservices
